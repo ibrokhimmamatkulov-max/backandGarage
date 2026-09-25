@@ -12,7 +12,11 @@ fi
 # каждом запуске контейнера. nginx свою конфигурацию из переменных не читает,
 # поэтому подставляем значение в файл прямо перед стартом.
 : "${PORT:=8080}"
-envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+# Пишем целиком nginx.conf, а не файл в conf.d/: apk-пакет nginx на Alpine
+# по умолчанию подключает /etc/nginx/http.d/*.conf, а не conf.d/ (в отличие
+# от официального Docker-образа nginx) — обычный snippet в conf.d/ тихо
+# не подключался бы вообще.
+envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 php artisan config:cache
 php artisan route:cache
