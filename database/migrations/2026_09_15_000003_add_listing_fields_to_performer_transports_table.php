@@ -89,7 +89,16 @@ return new class extends Migration
 
     private function indexExists(string $table, string $index): bool
     {
-        return count(Schema::getConnection()
+        $connection = Schema::getConnection();
+
+        if ($connection->getDriverName() === 'pgsql') {
+            return count($connection->select(
+                'select indexname from pg_indexes where tablename = ? and indexname = ?',
+                [$table, $index]
+            )) > 0;
+        }
+
+        return count($connection
             ->select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$index])) > 0;
     }
 };
