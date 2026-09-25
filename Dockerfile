@@ -28,6 +28,7 @@ FROM php:8.3-fpm-alpine AS app
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
 RUN install-php-extensions \
     pdo_mysql \
+    pdo_pgsql \
     mbstring \
     exif \
     pcntl \
