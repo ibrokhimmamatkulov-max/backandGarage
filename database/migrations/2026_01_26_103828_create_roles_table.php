@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('roles')) {
-                Schema::create('roles', function (Blueprint $table) {
+        // Не "roles" — та таблица принадлежит Spatie\Permission (система прав
+        // менеджеров/Position), название совпало случайно и ломало миграцию
+        // на чистой базе ("relation roles already exists").
+        if (!Schema::hasTable('app_roles')) {
+                Schema::create('app_roles', function (Blueprint $table) {
                     $table->id();
                     $table->string('name')->unique();
                     $table->string('description')->nullable();
@@ -26,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('app_roles');
     }
 };

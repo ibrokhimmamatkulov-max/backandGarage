@@ -9,6 +9,10 @@ class Role extends Model
 {
     use HasFactory;
 
+    // Не "roles" — та таблица принадлежит Spatie\Permission (система прав
+    // менеджеров/Position), эта модель к ней отношения не имеет.
+    protected $table = 'app_roles';
+
     protected $fillable = [
         'name',
         'description',
