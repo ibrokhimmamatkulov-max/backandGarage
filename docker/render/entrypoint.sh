@@ -36,6 +36,12 @@ if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
     php artisan passport:keys --force
 fi
 
+# Ключи созданы уже ПОСЛЕ chmod выше — свежий файл получает права по
+# умолчанию, а не 777. Тот же файл потом читает php-fpm под другим
+# пользователем, чем тот, что его создал, — без этого второго прохода
+# получаем "Key path ... does not exist or is not readable".
+chmod -R 777 storage bootstrap/cache
+
 # php-fpm в фоне, nginx — процесс на переднем плане: именно за ним следит
 # Render, по нему решает, жив ли контейнер.
 php-fpm -D
