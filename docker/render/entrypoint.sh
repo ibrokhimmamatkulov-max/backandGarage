@@ -3,6 +3,14 @@ set -e
 
 cd /var/www/html
 
+# Образ собран для docker-compose, где процесс всегда идёт под www:www
+# (см. основной Dockerfile). Render запускает контейнер под своим
+# пользователем вне зависимости от USER в Dockerfile — писать в storage/
+# и bootstrap/cache (логи, кэш, сгенерированные ключи Passport) от чужого
+# владельца нельзя. Не гадаем, какой именно UID даст Render — открываем
+# запись всем.
+chmod -R 777 storage bootstrap/cache
+
 if [ -z "$APP_KEY" ]; then
     echo "ERROR: APP_KEY is not set. Generate one with 'php artisan key:generate --show' and put it in the environment." >&2
     exit 1
