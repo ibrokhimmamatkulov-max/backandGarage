@@ -62,3 +62,28 @@ FROM nginx:1.27-alpine AS nginx
 
 COPY --from=vendor /app/public /var/www/html/public
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+########################################
+# 4. Render — nginx и php-fpm в одном контейнере
+########################################
+# Render запускает один контейнер на сервис, а docker-compose.yml выше
+# рассчитан на два (app + nginx, общаются по имени app:9000). Отдельный
+# слой вместо адаптации основного — чтобы не трогать боевую сборку compose.
+#
+# Render не умеет собирать конкретный --target многоступенчатого Dockerfile
+# (открытый запрос ещё с 2021 года) — берёт последний FROM в файле. Поэтому
+# этот слой обязан оставаться самым последним: допишете что-то ниже — Render
+# станет собирать его, а не render.
+FROM app AS render
+
+USER root
+
+RUN apk add --no-cache nginx gettext
+
+COPY docker/render/nginx.conf.template /etc/nginx/conf.d/default.conf.template
+COPY docker/render/entrypoint.sh /usr/local/bin/render-entrypoint.sh
+RUN chmod +x /usr/local/bin/render-entrypoint.sh
+
+# Render сам присылает порт через $PORT — не фиксируем EXPOSE на конкретное число.
+ENTRYPOINT ["render-entrypoint.sh"]
+CMD []
