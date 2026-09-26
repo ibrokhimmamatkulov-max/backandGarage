@@ -36,6 +36,13 @@ if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
     php artisan passport:keys --force
 fi
 
+# public/storage -> storage/app/public. Без неё все фото объявлений (Storage::url
+# на диске 'public') отдают Laravel-404: try_files в nginx.conf.template падает
+# на несуществующий путь и уходит на index.php, а не 404 от самого nginx.
+if [ ! -L public/storage ]; then
+    php artisan storage:link
+fi
+
 # Ключи созданы уже ПОСЛЕ chmod выше — свежий файл получает права по
 # умолчанию, а не 777. Тот же файл потом читает php-fpm под другим
 # пользователем, чем тот, что его создал, — без этого второго прохода
