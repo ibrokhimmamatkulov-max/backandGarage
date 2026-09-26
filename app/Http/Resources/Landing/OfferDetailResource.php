@@ -36,6 +36,7 @@ class OfferDetailResource extends JsonResource
             'drive_type'       => $this->drive_type,
             'has_taxi_license' => (bool) $this->has_taxi_license,
             'has_turbo'        => (bool) $this->has_turbo,
+            'has_gps_tracker'  => (bool) $this->has_gps_tracker,
             // Отметку ставит менеджер по снимкам техпаспорта; сами документы
             // в объявлении не показываются (ТЗ §4).
             'vin_verified'     => (bool) $this->vin_verified,
@@ -102,6 +103,7 @@ class OfferDetailResource extends JsonResource
             ])->values(),
 
             'owner' => $this->owner ? [
+                'id'           => $this->owner->id,
                 'display_name' => $this->owner->display_name,
                 'owner_type'   => $this->owner->owner_type,
             ] : null,

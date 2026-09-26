@@ -31,7 +31,7 @@ class ListingService
         'count_seat', 'car_number', 'fuel_type_id', 'city_id', 'gearbox_id',
         'min_rent_days', 'max_rent_days', 'address', 'title', 'description', 'dop_info',
         'customs_cleared', 'engine_volume', 'mileage', 'drive_type',
-        'has_taxi_license', 'has_turbo', 'VIN',
+        'has_taxi_license', 'has_turbo', 'has_gps_tracker', 'VIN',
     ];
 
     public function create(Owner $owner, array $data): PerformerTransport

@@ -152,6 +152,7 @@ Route::prefix('landing')->group(function () {
     Route::get('price-calc',     [LandingController::class, 'priceCalc']);
     Route::get('offers',         [LandingController::class, 'offers']);
     Route::get('offers/{id}',    [LandingController::class, 'offer']);
+    Route::get('owners/{id}',    [LandingController::class, 'ownerProfile']);
     Route::post('apply/request-otp', [LandingController::class, 'requestApplyOtp'])->middleware('throttle:20,1');
     Route::post('apply',         [LandingController::class, 'apply'])->middleware('throttle:10,1');
 });

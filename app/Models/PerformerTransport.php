@@ -76,6 +76,7 @@ class PerformerTransport extends BasicModel
         'drive_type',
         'has_taxi_license',
         'has_turbo',
+        'has_gps_tracker',
         'vin_verified',
         'vin_verified_at',
         'VIN',
@@ -94,6 +95,7 @@ class PerformerTransport extends BasicModel
         'customs_cleared'  => 'boolean',
         'has_taxi_license' => 'boolean',
         'has_turbo'        => 'boolean',
+        'has_gps_tracker'  => 'boolean',
         'vin_verified'     => 'boolean',
     ];
 

@@ -106,6 +106,12 @@ class ListingController extends Controller
         return $this->success(null, 'Объявление удалено.');
     }
 
+    private const PAUSE_REASONS = [
+        'rented_out'   => 'Сдал в аренду',
+        'changed_mind' => 'Передумал сдавать',
+        'other'        => 'Другая причина',
+    ];
+
     public function pause(Request $request, int $id): JsonResponse
     {
         $listing = $this->findOwned($request, $id);
@@ -114,7 +120,27 @@ class ListingController extends Controller
             return $this->error('Объявление не найдено.', 404);
         }
 
-        $this->moderation->pause($listing);
+        $validator = validator($request->all(), [
+            'reason'  => 'nullable|in:' . implode(',', array_keys(self::PAUSE_REASONS)),
+            'comment' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->error('Validation error', 422, $validator->errors());
+        }
+
+        $reason = $request->input('reason');
+        $label = $reason ? self::PAUSE_REASONS[$reason] : null;
+        $freeText = trim((string) $request->input('comment'));
+
+        $comment = match (true) {
+            $label && $freeText => "{$label}: {$freeText}",
+            (bool) $label       => $label,
+            (bool) $freeText    => $freeText,
+            default             => null,
+        };
+
+        $this->moderation->pause($listing, $comment);
 
         return $this->success(new OwnerListingResource($listing), 'Объявление снято с публикации.');
     }

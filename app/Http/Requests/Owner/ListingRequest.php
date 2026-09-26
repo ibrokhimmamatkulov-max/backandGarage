@@ -33,14 +33,18 @@ class ListingRequest extends FormRequest
             'dop_options'   => 'nullable|array',
             'dop_options.*' => 'integer|exists:car_options,id',
 
-            // Технические поля (часть — специфика Таджикистана)
-            'customs_cleared'  => 'nullable|boolean',
+            // Технические поля (часть — специфика Таджикистана). Растаможка,
+            // пробег и лицензия на такси перенесены из необязательных в
+            // обязательные решением от 26.09.2026 — покупатель должен видеть
+            // это сразу, а не после звонка владельцу.
+            'customs_cleared'  => "{$required}|boolean",
             'engine_volume'    => 'nullable|numeric|min:0.1|max:9.9',
-            'mileage'          => 'nullable|integer|min:0|max:2000000',
+            'mileage'          => "{$required}|integer|min:0|max:2000000",
             'drive_type'       => 'nullable|in:fwd,rwd,awd',
-            'has_taxi_license' => 'nullable|boolean',
+            'has_taxi_license' => "{$required}|boolean",
             'has_turbo'        => 'nullable|boolean',
-            'VIN'              => 'nullable|string|max:32',
+            'has_gps_tracker'  => 'nullable|boolean',
+            'VIN'              => 'nullable|string|size:17|regex:/^[A-HJ-NPR-Z0-9]{17}$/i',
 
             // Шаг 4 — описание
             'title'       => 'nullable|string|max:180',
@@ -93,6 +97,12 @@ class ListingRequest extends FormRequest
         return [
             'max_rent_days.gte'   => 'Максимальный срок не может быть меньше минимального.',
             'car_number.required' => 'Укажите госномер — по нему мы не даём выставить одну машину дважды.',
+
+            'customs_cleared.required'  => 'Укажите, растаможен ли автомобиль в РТ.',
+            'mileage.required'          => 'Укажите пробег.',
+            'has_taxi_license.required' => 'Укажите, есть ли лицензия на такси.',
+            'VIN.size'                  => 'VIN — ровно 17 символов.',
+            'VIN.regex'                 => 'Неверный формат VIN: латинские буквы и цифры, без I, O, Q.',
 
             'tariff.required'                    => 'Укажите тариф аренды.',
             'tariff.min_months.required'         => 'Выберите минимальный срок аренды.',

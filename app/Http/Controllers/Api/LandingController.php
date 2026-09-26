@@ -14,6 +14,7 @@ use App\Models\City;
 use App\Models\ColorCar;
 use App\Models\Gearbox;
 use App\Models\Marka;
+use App\Models\Owner;
 use App\Models\PerformerTransport;
 use App\Models\RentalApplication;
 use App\Models\RentalTariff;
@@ -152,6 +153,49 @@ class LandingController extends Controller
         $offer->newQuery()->whereKey($offer->id)->increment('views_count');
 
         return $this->success(new OfferDetailResource($offer));
+    }
+
+    /**
+     * Публичный профиль владельца (ТЗ, решение от 26.09.2026): арендатор
+     * должен видеть имя и все опубликованные объявления того же владельца,
+     * не только карточку одной машины. Заблокированный/несуществующий
+     * владелец отдаёт 404 — не палим разницу между «нет такого» и «забанен».
+     */
+    public function ownerProfile(Request $request, int $id): JsonResponse
+    {
+        $owner = Owner::find($id);
+
+        if (!$owner || $owner->isBlocked()) {
+            return $this->error('Профиль не найден.', 404);
+        }
+
+        $listings = PerformerTransport::query()
+            ->visibleOnShowcase()
+            ->where('owner_id', $owner->id)
+            ->with([
+                'model_car.brand', 'body_type', 'color', 'fuel_type', 'photos',
+                'city', 'gearbox', 'taxiTariff', 'tariffs', 'priceTiers', 'terms',
+            ])
+            ->orderByDesc('id')
+            ->paginate($request->integer('per_page', 12));
+
+        return $this->success([
+            'owner' => [
+                'id'           => $owner->id,
+                'display_name' => $owner->display_name,
+                'owner_type'   => $owner->owner_type,
+                'member_since' => $owner->created_at?->toDateString(),
+            ],
+            'listings' => [
+                'data' => OfferListResource::collection($listings),
+                'meta' => [
+                    'total'        => $listings->total(),
+                    'per_page'     => $listings->perPage(),
+                    'current_page' => $listings->currentPage(),
+                    'last_page'    => $listings->lastPage(),
+                ],
+            ],
+        ]);
     }
 
     /**

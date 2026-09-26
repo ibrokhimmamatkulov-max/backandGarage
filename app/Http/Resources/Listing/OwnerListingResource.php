@@ -51,6 +51,8 @@ class OwnerListingResource extends JsonResource
             'drive_type'       => $this->drive_type,
             'has_taxi_license' => (bool) $this->has_taxi_license,
             'has_turbo'        => (bool) $this->has_turbo,
+            'has_gps_tracker'  => (bool) $this->has_gps_tracker,
+            'VIN'              => $this->VIN,
 
             // Только для показа: отметку ставит менеджер, владелец её не меняет
             'vin_verified'     => (bool) $this->vin_verified,

@@ -94,9 +94,14 @@ class ModerationService
         );
     }
 
-    public function pause(PerformerTransport $listing): PerformerTransport
+    /**
+     * $comment — причина снятия с публикации (ТЗ, решение от 26.09.2026):
+     * владелец выбирает готовый вариант или пишет свой, менеджер видит его
+     * в журнале решений объявления.
+     */
+    public function pause(PerformerTransport $listing, ?string $comment = null): PerformerTransport
     {
-        return $this->transition($listing, PerformerTransport::STATUS_PAUSED, null, 'Снято владельцем');
+        return $this->transition($listing, PerformerTransport::STATUS_PAUSED, null, $comment ?: 'Снято владельцем');
     }
 
     public function resume(PerformerTransport $listing): PerformerTransport
