@@ -27,7 +27,13 @@ class ListingPhotoController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'photos'   => 'required|array|min:1',
-            'photos.*' => 'image|mimes:jpeg,jpg,png,webp|max:5120',
+            // 'image' вместо 'file' здесь ломался на реальных телефонных
+            // снимках: правило гоняет файл через getimagesize() и падает на
+            // всём, что не bare JPEG/PNG (HEIC под .jpg-расширением и т.п.),
+            // хотя расширение и mimes проходят нормально. У документов
+            // (ListingDocumentController) то же самое уже сделано через
+            // file|mimes — там это не ломалось.
+            'photos.*' => 'file|mimes:jpeg,jpg,png,webp|max:5120',
         ], [
             'photos.*.max'   => 'Каждое фото — не больше 5 МБ.',
             'photos.*.mimes' => 'Допустимые форматы: JPG, PNG, WebP.',
