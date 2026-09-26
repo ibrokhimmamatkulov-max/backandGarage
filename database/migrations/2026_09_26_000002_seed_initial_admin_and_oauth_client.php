@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Первый вход в админку невозможен без учётки. И без password-grant
@@ -33,16 +34,26 @@ return new class extends Migration
         $clientSecret  = env('PASSPORT_GRANT_CLIENT_SECRET');
 
         if ($adminPassword && !DB::table('users')->where('login', self::ADMIN_LOGIN)->exists()) {
-            DB::table('users')->insert([
-                'name'       => 'Администратор',
-                'email'      => 'admin@garage.local',
+            $user = [
                 'login'      => self::ADMIN_LOGIN,
                 'first_name' => 'Администратор',
                 'status'     => true,
                 'password'   => Hash::make($adminPassword),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+
+            // users на Render не обязательно совпадает со стоковой миграцией
+            // Laravel (создавалась не в этом деплое) — заполняем name/email,
+            // только если такие колонки реально есть, а не гадаем.
+            if (Schema::hasColumn('users', 'name')) {
+                $user['name'] = 'Администратор';
+            }
+            if (Schema::hasColumn('users', 'email')) {
+                $user['email'] = 'admin@garage.local';
+            }
+
+            DB::table('users')->insert($user);
         } elseif (!$adminPassword) {
             Log::warning('Seed skipped: INITIAL_ADMIN_PASSWORD is not set, no admin user created.');
         }
