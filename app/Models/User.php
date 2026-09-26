@@ -7,7 +7,6 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\DB;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
@@ -18,13 +17,7 @@ User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
     use HasRoles;
     protected static $logFillable = true;
-    protected $connection = 'mysql_taxi';
     protected $table = 'users';
-    public function __construct(array $attributes = [])
-    {
-        $this->table = DB::connection('mysql_taxi')->getDatabaseName().'.'.$this->table;
-        parent::__construct($attributes);
-    }
     public const CLIENT_SERVICE = "stu_ClientCabinet";
     public const DRIVER_SERVICE = "stu_DriverService";
     public const TU_PHONE = "tu_Phone";
@@ -65,15 +58,6 @@ User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
-
-    public function employee() {
-        return $this->belongsTo(Employee::class, 'id', 'user_id')->with(['employee_group']);
-    }
-
-    public function oauth_access_tokens()
-    {
-        return $this->hasMany(OAuthAccessToken::class,'user_id','id');
-    }
 
     // public function model_has_roles(){
     //     return $this->belongsTo(ModelHasRole::class, 'id', 'model_id');

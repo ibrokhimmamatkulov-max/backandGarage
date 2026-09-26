@@ -62,6 +62,9 @@ return [
     |
     */
 
-    'connection' => env('PASSPORT_DB_CONNECTION', 'mysql_taxi'),
+    // Дефолт был 'mysql_taxi' — чужая БД таксопарка, на Render недостижима.
+    // Passport-таблицы (oauth_*) живут в собственной базе Гаража, поэтому
+    // null отдаёт их на обычное дефолтное подключение приложения.
+    'connection' => env('PASSPORT_DB_CONNECTION', null),
 
 ];
