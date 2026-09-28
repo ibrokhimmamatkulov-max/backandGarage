@@ -47,7 +47,7 @@ class RentalApplicationController extends Controller
             default => $query->orderByDesc('id'),
         };
 
-        $applications = $query->paginate($request->integer('per_page', 30));
+        $applications = $query->paginate($this->clampPerPage($request->integer('per_page', 30)));
 
         return $this->success([
             'data' => collect($applications->items())->map(fn ($a) => $this->present($a)),

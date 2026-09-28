@@ -120,7 +120,7 @@ class LandingController extends Controller
         $query = $this->applyFilters($query, $request);
         $query = $this->applySorting($query, $request);
 
-        $offers = $query->paginate($request->integer('per_page', 12));
+        $offers = $query->paginate($this->clampPerPage($request->integer('per_page', 12)));
 
         return $this->success([
             'data' => OfferListResource::collection($offers),
@@ -177,7 +177,7 @@ class LandingController extends Controller
                 'city', 'gearbox', 'taxiTariff', 'tariffs', 'priceTiers', 'terms',
             ])
             ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 12));
+            ->paginate($this->clampPerPage($request->integer('per_page', 12)));
 
         return $this->success([
             'owner' => [

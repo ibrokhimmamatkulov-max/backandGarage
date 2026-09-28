@@ -17,7 +17,7 @@ class CarBodyTypeController extends Controller
         $query = BodyType::query();
         $limit = 100;
 
-        if ($request->has('limit')) $limit = $request->limit;
+        if ($request->has('limit')) $limit = $this->clampPerPage((int) $request->limit);
         if ($request->has('filter_is_active')) $query->where('is_active', $request->filter_is_active);
         if ($request->has('filter_category_car_id')) $query->where('category_car_id', $request->filter_category_car_id);
 

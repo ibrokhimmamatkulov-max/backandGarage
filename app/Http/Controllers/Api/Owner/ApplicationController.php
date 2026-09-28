@@ -27,7 +27,7 @@ class ApplicationController extends Controller
             ->when($request->filled('status_id'), fn ($q) => $q->where('status_id', $request->integer('status_id')))
             ->when($request->filled('listing_id'), fn ($q) => $q->where('performer_transport_id', $request->integer('listing_id')))
             ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($this->clampPerPage($request->integer('per_page', 20)));
 
         return $this->success([
             'data' => collect($applications->items())->map(fn ($a) => $this->present($a)),

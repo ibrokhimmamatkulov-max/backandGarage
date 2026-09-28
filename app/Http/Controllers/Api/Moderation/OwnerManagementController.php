@@ -28,7 +28,7 @@ class OwnerManagementController extends Controller
                 });
             })
             ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($this->clampPerPage($request->integer('per_page', 20)));
 
         return $this->success([
             'data' => collect($owners->items())->map(fn ($owner) => array_merge(

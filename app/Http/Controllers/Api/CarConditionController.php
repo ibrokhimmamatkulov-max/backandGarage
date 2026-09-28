@@ -15,7 +15,7 @@ class CarConditionController extends Controller
     {
         $limit = 100;
         if ($request->has('limit') && (int)$request->limit > 0) {
-            $limit = $request->limit;
+            $limit = $this->clampPerPage((int) $request->limit);
         }
 
         $query = CarCondition::query();

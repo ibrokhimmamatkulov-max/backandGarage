@@ -48,7 +48,7 @@ class ListingModerationController extends Controller
             // недавно поданные сверху, это ближе к тому, что хотят увидеть
             // при обычном просмотре объявлений.
             ->orderBy('submitted_at', $status === PerformerTransport::STATUS_PENDING ? 'asc' : 'desc')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($this->clampPerPage($request->integer('per_page', 20)));
 
         return $this->success([
             'data' => OwnerListingResource::collection($listings),

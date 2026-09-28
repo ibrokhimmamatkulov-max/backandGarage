@@ -31,7 +31,7 @@ class ListingController extends Controller
             // (публикация обратно), так что прятать эти карточки незачем.
             ->when($request->filled('status'), fn ($q) => $q->where('moderation_status', $request->input('status')))
             ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($this->clampPerPage($request->integer('per_page', 20)));
 
         return $this->success([
             'data' => OwnerListingResource::collection($listings),

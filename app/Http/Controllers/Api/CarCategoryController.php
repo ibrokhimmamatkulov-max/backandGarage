@@ -16,7 +16,7 @@ class CarCategoryController extends Controller
         $query = CategoryCar::query();
         $limit = 100;
 
-        if ($request->has('limit')) $limit = $request->limit;
+        if ($request->has('limit')) $limit = $this->clampPerPage((int) $request->limit);
 
         if ($request->has('filter_id')) {
             $filter_id = $request->filter_id;

@@ -41,7 +41,7 @@ class CarModelController extends Controller
         $carModels = Marka::query()->with(['category_car', 'brand', 'class_car']);
         $limit = 100;
 
-        if ($request->has('limit'))                  $limit = $request->limit;
+        if ($request->has('limit'))                  $limit = $this->clampPerPage((int) $request->limit);
         if ($request->has('filter_is_active'))       $carModels->where('is_active', $request->filter_is_active);
         if ($request->has('filter_category_car_id')) $carModels->where('category_car_id', $request->filter_category_car_id);
         if ($request->has('filter_car_brand_id'))    $carModels->where('car_brand_id', $request->filter_car_brand_id);
