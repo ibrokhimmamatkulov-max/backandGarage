@@ -1,5 +1,135 @@
-1. composer install
-2. cp .env.example .env
-3. php artisan migrate
-4. php artisan key:generate
-5. php artisan passport:install
+# Гараж 2.0 — деплой ветки main2
+
+Пошаговая инструкция по развёртыванию `main2` — полная замена `main`,
+переключение делается **checkout'ом на новую ветку**, не merge'ем (история
+разошлась, конфликтов через merge не будет, но и смысла в нём нет).
+
+## Что изменилось для деплоя
+
+- **База — MySQL**, как и раньше. Postgres в этой ветке не использовался
+  и не используется.
+- **Вход менеджера/админа больше не зависит от `mysql_taxi`.** Раньше
+  `User`/Passport читали логин и OAuth-токены из отдельной базы другого
+  проекта — теперь всё в собственной базе Гаража. Переменные
+  `DB_CONNECTION_TAXI` / `DB_HOST_TAXI` / `DB_DATABASE_TAXI` и т.д. **больше
+  не нужны**, можно не задавать.
+- Появились новые таблицы (owners, owner_otp_codes, taxi_tariffs,
+  vehicle_vins, listing_terms и др.) — все через миграции, ничего вручную
+  создавать не нужно.
+
+## 1. Переменные окружения
+
+Скопировать `.env.example` в `.env` и задать:
+
+```env
+APP_KEY=                     # php artisan key:generate --show
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=<реальный домен бэкенда>
+
+DB_CONNECTION=mysql
+DB_HOST=...
+DB_PORT=3306
+DB_DATABASE=...
+DB_USERNAME=...
+DB_PASSWORD=...
+
+# Первый вход в админку — создаётся один раз миграцией на чистой базе.
+# Логин фиксирован: admin. Пароль — то, что здесь укажете.
+INITIAL_ADMIN_PASSWORD=<придумать пароль>
+
+# OAuth password-grant клиент для входа в админку (id всегда 1).
+# Секрет — любая случайная строка, сгенерировать самим, например:
+#   openssl rand -hex 32
+PASSPORT_GRANT_CLIENT_ID=1
+PASSPORT_GRANT_CLIENT_SECRET=<случайная строка>
+
+# PASSPORT_PRIVATE_KEY/PUBLIC_KEY можно оставить пустыми — Passport сам
+# сгенерирует ключи в storage/ при первом запуске контейнера.
+
+# ⚠️ ОБЯЗАТЕЛЬНО sms в проде, НЕ stub — при stub войти можно под любым
+# номером телефона без реального кода.
+OTP_MODE=sms
+SMS_DRIVER=log   # заменить на provider, когда выберете SMS-шлюз для Таджикистана
+```
+
+`INITIAL_ADMIN_PASSWORD` и `PASSPORT_GRANT_CLIENT_SECRET` читаются миграцией
+**один раз**, на чистой базе. Если задеплоили без них — либо откатите на
+шаг миграцию (`php artisan migrate:rollback --step=1`) и прогоните заново
+с переменными, либо впишите строки в `users`/`oauth_clients` вручную.
+
+## 2. Запуск (docker-compose из этого репозитория)
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+При старте контейнера `app` автоматически (см. `docker-entrypoint.sh`):
+
+1. `php artisan config:cache` / `route:cache` / `view:cache`
+2. `php artisan migrate --force`
+3. Генерация ключей Passport, если их ещё нет
+4. `php artisan storage:link`, если ссылки ещё нет (без неё фото объявлений
+   отдают 404)
+
+Дополнительно вручную (не входит в entrypoint):
+
+```bash
+docker compose exec app php artisan storage:link   # если почему-то не создалась
+```
+
+## 3. Крон — обязательно для 30-дневного срока объявлений
+
+Объявления сами прячутся с витрины через 30 дней после публикации
+(`config/listing.php`), но статус в `archived` (чтобы владелец видел это
+в кабинете, а не просто «пропало») переводит команда по расписанию.
+Нужен работающий `schedule:run` на сервере — Laravel сам ничего не
+запускает без крона:
+
+```cron
+* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Без крона объявления всё равно скрываются с публичной витрины сами
+(это не зависит от крона), просто не переводятся в `archived` — владелец
+не увидит явную причину в кабинете.
+
+## 4. Первый вход в админку
+
+- URL: `<APP_URL>/api/auth/login` (или через фронтенд `/admin`)
+- Логин: `admin`
+- Пароль: тот, что задали в `INITIAL_ADMIN_PASSWORD`
+
+Дальше через саму админку можно создать остальных менеджеров и роли.
+
+## 5. Фронтенд (репозиторий garage_landing, тоже ветка main2)
+
+```bash
+npm ci
+npm run build
+```
+
+Сборка даёт **два независимых входа** — `dist/index.html` (витрина +
+кабинет владельца) и `dist/admin.html` (админка менеджера). Кладутся
+раздельно, каждый на свой домен/поддомен.
+
+Переменная окружения на этапе сборки:
+
+```env
+VITE_API_BASE_URL=<URL бэкенда>/api
+```
+
+Роутинг на клиенте (`createWebHistory`) — статическому хостингу нужен
+SPA-фолбэк: любой путь, кроме файлов с расширением, должен отдавать
+`index.html` (для витрины) или `admin.html` (для админки на её домене),
+иначе обновление страницы на любом маршруте кроме `/` даст 404.
+
+## 6. Чек-лист безопасности перед реальным трафиком
+
+- [ ] `OTP_MODE=sms` (не `stub`)
+- [ ] `APP_DEBUG=false`
+- [ ] `INITIAL_ADMIN_PASSWORD` и `PASSPORT_GRANT_CLIENT_SECRET` — не дефолтные,
+      сгенерированы случайно
+- [ ] Пароль первого админа сменён на свой после первого входа
+- [ ] Крон `schedule:run` настроен и реально выполняется

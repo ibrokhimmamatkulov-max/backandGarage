@@ -18,4 +18,10 @@ if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
     php artisan passport:keys --force
 fi
 
+# public/storage -> storage/app/public. Без неё все фото объявлений
+# (Storage::url на диске 'public') отдают 404.
+if [ ! -L public/storage ]; then
+    php artisan storage:link
+fi
+
 exec "$@"
