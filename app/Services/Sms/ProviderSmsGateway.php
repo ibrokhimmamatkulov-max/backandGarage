@@ -2,15 +2,14 @@
 
 namespace App\Services\Sms;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
- * Заготовка под реального провайдера.
+ * Реальный SMS-шлюз — Tcell (SMS_DRIVER=provider).
  *
- * Провайдер для Таджикистана ещё не выбран (ТЗ, открытый вопрос №2).
- * Каркас — конфигурация, таймаут, ретраи, разбор ответа, логирование — готов;
- * дописать нужно только тело sendRequest() под конкретный API.
+ * Запрос к конкретному API — в sendRequest(); конфигурация, таймаут,
+ * ретраи и логирование — общие.
  */
 class ProviderSmsGateway implements SmsGateway
 {
@@ -58,27 +57,32 @@ class ProviderSmsGateway implements SmsGateway
     }
 
     /**
-     * ЗДЕСЬ дописывается интеграция под выбранного провайдера.
-     *
-     * Типовой вид запроса — раскомментировать и поправить payload с разбором
-     * ответа под конкретный API; остальной класс менять не нужно:
-     *
-     *     $response = Http::timeout($this->timeout)
-     *         ->retry($this->retries, 500)
-     *         ->withToken($this->key)
-     *         ->post($this->url, [
-     *             'sender'  => $this->sender,
-     *             'phone'   => $phone,
-     *             'message' => $message,
-     *         ]);
-     *
-     *     return $response->successful();
+     * Tcell: POST {SMS_API_URL} с JSON {"from", "msisdn", "msg"},
+     * ключ — в заголовке X-API-Key (SMS_API_KEY), отправитель — SMS_SENDER_NAME.
+     * Номер уже нормализован к 992XXXXXXXXX (PhoneNormalizer) — в таком виде его и ждёт шлюз.
      */
     private function sendRequest(string $phone, string $message): bool
     {
-        throw new RuntimeException(
-            'SMS-провайдер не выбран. Реализуйте ProviderSmsGateway::sendRequest() '
-            . 'или оставьте SMS_DRIVER=log / OTP_MODE=stub.'
-        );
+        $response = Http::timeout($this->timeout)
+            ->retry($this->retries, 500, throw: false)
+            ->acceptJson()
+            ->withHeaders(['X-API-Key' => $this->key])
+            ->post($this->url, [
+                'from'   => $this->sender,
+                'msisdn' => $phone,
+                'msg'    => $message,
+            ]);
+
+        if (!$response->successful()) {
+            Log::error('[SMS:provider] Tcell отклонил сообщение.', [
+                'phone'  => $phone,
+                'status' => $response->status(),
+                'body'   => mb_substr($response->body(), 0, 1000),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 }
