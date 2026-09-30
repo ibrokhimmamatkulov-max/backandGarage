@@ -113,6 +113,10 @@ class ProfileController extends Controller
 
         $issued = $this->otp->issue($phone, OwnerOtpCode::PURPOSE_PHONE_CHANGE, $request->ip());
 
+        if (!$issued['sent']) {
+            return $this->error('Не удалось отправить SMS. Попробуйте позже.', 503);
+        }
+
         return $this->success([
             'expires_in' => (int) config('otp.ttl_seconds'),
             'delivery'   => $this->otp->isStubMode() ? 'stub' : 'sms',

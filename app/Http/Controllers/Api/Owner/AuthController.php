@@ -50,6 +50,11 @@ class AuthController extends Controller
         }
 
         $issued = $this->otp->issue($phone, ip: $request->ip());
+
+        if (!$issued['sent']) {
+            return $this->error('Не удалось отправить SMS. Попробуйте позже.', 503);
+        }
+
         $isStub = $this->otp->isStubMode();
 
         return $this->success([
