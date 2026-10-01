@@ -15,12 +15,14 @@ use App\Models\ColorCar;
 use App\Models\Gearbox;
 use App\Models\Marka;
 use App\Models\Owner;
+use App\Models\OwnerOtpCode;
 use App\Models\PerformerTransport;
 use App\Models\RentalApplication;
 use App\Models\RentalTariff;
 use App\Services\CarFilterService;
 use App\Services\Listing\AvailabilityService;
 use App\Services\Listing\PriceCalculator;
+use App\Services\Owner\OtpService;
 use App\Services\Owner\PhoneNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +33,7 @@ class LandingController extends Controller
     public function __construct(
         private readonly AvailabilityService $availability,
         private readonly PriceCalculator $calculator,
+        private readonly OtpService $otp,
     ) {
     }
 
