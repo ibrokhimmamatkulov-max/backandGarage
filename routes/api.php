@@ -136,6 +136,16 @@ Route::middleware('auth:api')->group(function (){
 
 Route::group(['prefix' => 'auth'], function () {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:30,1');
+
+    // Вход менеджера по SMS-коду (для учёток с привязанным телефоном)
+    Route::post('request-otp', [AuthController::class, 'requestOtp'])->middleware('throttle:10,1');
+    Route::post('verify-otp',  [AuthController::class, 'verifyOtp'])->middleware('throttle:20,1');
+
+    // Привязка телефона к своей учётке — после первого входа по паролю
+    Route::middleware(['auth:api', 'throttle:10,1'])->group(function () {
+        Route::post('phone/request-otp', [AuthController::class, 'requestPhoneBind']);
+        Route::post('phone/verify-otp',  [AuthController::class, 'verifyPhoneBind']);
+    });
 });
 
 // Public landing API — без авторизации

@@ -30,21 +30,39 @@ class OtpService
     }
 
     /**
+     * Таблица кодов. Логика одна на владельцев и менеджеров, а коды —
+     * раздельные (см. ManagerOtpService): код владельца не должен открывать
+     * админку с тем же номером.
+     *
+     * @return class-string<OwnerOtpCode>|class-string<\App\Models\ManagerOtpCode>
+     */
+    protected function model(): string
+    {
+        return OwnerOtpCode::class;
+    }
+
+    protected function rateKeyPrefix(): string
+    {
+        return 'otp:';
+    }
+
+    /**
      * @return array{code: OwnerOtpCode, sent: bool, stub_code: ?string}
      */
     public function issue(string $phone, string $purpose = OwnerOtpCode::PURPOSE_AUTH, ?string $ip = null): array
     {
         $phone = PhoneNormalizer::normalize($phone);
+        $model = $this->model();
 
         // Ранее выданные неиспользованные коды гасим: активный код всегда один.
-        OwnerOtpCode::where('phone', $phone)
+        $model::where('phone', $phone)
             ->where('purpose', $purpose)
             ->whereNull('consumed_at')
             ->update(['consumed_at' => now()]);
 
         $plainCode = $this->generateCode();
 
-        $record = OwnerOtpCode::create([
+        $record = $model::create([
             'phone'      => $phone,
             'code_hash'  => Hash::make($plainCode),
             'purpose'    => $purpose,
@@ -77,8 +95,9 @@ class OtpService
     public function verify(string $phone, string $code, string $purpose = OwnerOtpCode::PURPOSE_AUTH): array
     {
         $phone = PhoneNormalizer::normalize($phone);
+        $model = $this->model();
 
-        $record = OwnerOtpCode::where('phone', $phone)
+        $record = $model::where('phone', $phone)
             ->where('purpose', $purpose)
             ->whereNull('consumed_at')
             ->orderByDesc('id')
@@ -101,7 +120,7 @@ class OtpService
         $record->increment('attempts');
 
         if (!Hash::check($code, $record->code_hash)) {
-            $left = OwnerOtpCode::MAX_ATTEMPTS - $record->attempts;
+            $left = $model::MAX_ATTEMPTS - $record->attempts;
 
             return [
                 'ok'    => false,
@@ -123,8 +142,8 @@ class OtpService
     {
         $phone = PhoneNormalizer::normalize($phone);
 
-        $phoneKey = 'otp:phone:' . $phone;
-        $ipKey    = 'otp:ip:' . ($ip ?? 'unknown');
+        $phoneKey = $this->rateKeyPrefix() . 'phone:' . $phone;
+        $ipKey    = $this->rateKeyPrefix() . 'ip:' . ($ip ?? 'unknown');
 
         if (RateLimiter::tooManyAttempts($phoneKey, (int) config('otp.rate_limit.per_phone'))) {
             return ['allowed' => false, 'seconds' => RateLimiter::availableIn($phoneKey)];
@@ -145,7 +164,9 @@ class OtpService
 
     public function purgeExpired(): int
     {
-        return OwnerOtpCode::where('expires_at', '<', Carbon::now()->subDay())->delete();
+        $model = $this->model();
+
+        return $model::where('expires_at', '<', Carbon::now()->subDay())->delete();
     }
 
     private function generateCode(): string

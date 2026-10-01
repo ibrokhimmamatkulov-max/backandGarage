@@ -36,7 +36,9 @@ class AuthServiceProvider extends ServiceProvider
         Passport::enablePasswordGrant();
         Passport::tokensExpireIn($token_expired);
         Passport::refreshTokensExpireIn($refresh_token_exp);
-        // Passport::personalAccessTokensExpireIn(now()->addHour());
+        // Вход менеджера по SMS-коду выдаёт personal access токен — без этой
+        // строки он жил бы год (дефолт Passport), а не как токен по паролю.
+        Passport::personalAccessTokensExpireIn($token_expired);
 
         Passport::tokensCan([
             'web' => 'User token',
