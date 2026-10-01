@@ -6,6 +6,7 @@ use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\ProviderSmsGateway;
 use App\Services\Sms\SmsGateway;
 use App\Services\Sms\StubSmsGateway;
+use App\Services\Sms\TcellSmsGateway;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -30,6 +31,12 @@ class GarageServiceProvider extends ServiceProvider
 
             return match (config('sms.driver')) {
                 'stub'     => new StubSmsGateway(),
+                'tcell'    => new TcellSmsGateway(
+                    config('sms.tcell.url'),
+                    config('sms.tcell.api_key'),
+                    config('sms.tcell.sender'),
+                    (int) config('sms.tcell.timeout', 10),
+                ),
                 'provider' => new ProviderSmsGateway(
                     config('sms.provider.url'),
                     config('sms.provider.key'),

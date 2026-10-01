@@ -9,9 +9,9 @@ return [
     |
     | 'log'      — ничего не отправляет, пишет сообщение в лог. Локальная разработка.
     | 'stub'     — ничего не отправляет, используется демо-режимом OTP.
-    | 'provider' — реальный шлюз. Провайдер для Таджикистана ещё не выбран
-    |              (см. ТЗ, открытый вопрос №2); класс-заготовка на месте,
-    |              дописать нужно только тело метода send().
+    | 'tcell'    — боевой шлюз Tcell (TcellSmsGateway), настройки в 'tcell' ниже.
+    | 'provider' — заготовка под другого провайдера (ProviderSmsGateway),
+    |              дописать нужно только тело метода sendRequest().
     |
     */
 
@@ -24,6 +24,14 @@ return [
         'key'     => env('SMS_API_KEY'),
         'timeout' => (int) env('SMS_TIMEOUT', 10),
         'retries' => (int) env('SMS_RETRIES', 2),
+    ],
+
+    'tcell' => [
+        'url'     => env('TCELL_SMS_URL'),
+        'api_key' => env('TCELL_SMS_API_KEY'),
+        // Альфа-имя, зарегистрированное в Tcell
+        'sender'  => env('TCELL_SMS_SENDER', 'Gram'),
+        'timeout' => (int) env('TCELL_SMS_TIMEOUT', 10),
     ],
 
     'templates' => [

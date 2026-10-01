@@ -30,7 +30,7 @@ class OtpService
     }
 
     /**
-     * @return array{code: OwnerOtpCode, stub_code: ?string}
+     * @return array{code: OwnerOtpCode, sent: bool, stub_code: ?string}
      */
     public function issue(string $phone, string $purpose = OwnerOtpCode::PURPOSE_AUTH, ?string $ip = null): array
     {
@@ -53,10 +53,20 @@ class OtpService
             'ip'         => $ip,
         ]);
 
-        $this->sms->send($phone, strtr(config('sms.templates.otp'), [':code' => $plainCode]));
+        $result = $this->sms->send($phone, strtr(config('sms.templates.otp'), [':code' => $plainCode]));
+
+        // Заглушки (log/stub) ничего не отправляют намеренно — это не ошибка.
+        // Ошибка — когда реальный шлюз не смог отправить: код до абонента
+        // не дошёл, гасим его, чтобы не висел активным.
+        $sent = !$this->sms->delivers() || $result->delivered;
+
+        if (!$sent) {
+            $record->update(['consumed_at' => now()]);
+        }
 
         return [
             'code'      => $record,
+            'sent'      => $sent,
             'stub_code' => $this->isStubMode() ? $plainCode : null,
         ];
     }
