@@ -155,6 +155,14 @@ Route::prefix('landing')->group(function () {
     Route::get('owners/{id}',    [LandingController::class, 'ownerProfile']);
     Route::post('apply/request-otp', [LandingController::class, 'requestApplyOtp'])->middleware('throttle:20,1');
     Route::post('apply',         [LandingController::class, 'apply'])->middleware('throttle:10,1');
+
+    // Справочники под поля ListingRequest (состояние, привод, объём двигателя,
+    // год, доп. опции) — не владельческие данные, форма подачи анонимна
+    // (арендодатель логинится позже, а не до заполнения формы), поэтому
+    // раньше здесь стоял auth:owner: анонимный визит на /listings/new бил
+    // 401'ом, а общий axios-перехватчик на любой 401 уводил редиректом
+    // на /login прямо со страницы, форму не увидеть было вообще.
+    Route::get('reference',      [OwnerReferenceController::class, 'index']);
 });
 
 /*
@@ -175,9 +183,6 @@ Route::prefix('owner')->group(function () {
     });
 
     Route::middleware(['auth:owner', 'owner.active'])->group(function () {
-
-        // Справочники под поля ListingRequest — состояние, привод, объём двигателя, год, доп. опции
-        Route::get('reference',       [OwnerReferenceController::class, 'index']);
 
         Route::get('me',              [OwnerProfileController::class, 'show']);
         Route::patch('me',            [OwnerProfileController::class, 'update']);

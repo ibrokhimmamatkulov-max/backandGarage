@@ -93,14 +93,27 @@ class LandingController extends Controller
         return $this->success($models);
     }
 
+    /**
+     * is_active nullable, у старых строк никогда не выставлялся — NULL
+     * считаем активным (opt-out), иначе этот фильтр молча скрыл бы все
+     * старые записи, у которых флаг просто никогда не трогали.
+     */
     public function bodyTypes(): JsonResponse
     {
-        return $this->success(BodyType::orderBy('name')->get(['id', 'name']));
+        return $this->success(
+            BodyType::where(fn ($q) => $q->where('is_active', 1)->orWhereNull('is_active'))
+                ->orderBy('name')
+                ->get(['id', 'name'])
+        );
     }
 
     public function colors(): JsonResponse
     {
-        return $this->success(ColorCar::orderBy('name')->get(['id', 'name']));
+        return $this->success(
+            ColorCar::where(fn ($q) => $q->where('is_active', 1)->orWhereNull('is_active'))
+                ->orderBy('name')
+                ->get(['id', 'name'])
+        );
     }
 
     // ------------------------------------------------------------------
