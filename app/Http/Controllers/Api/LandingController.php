@@ -395,7 +395,12 @@ class LandingController extends Controller
             $to   = $request->filled('price_to') ? $request->float('price_to') : null;
 
             $query->where(function ($q) use ($from, $to) {
-                $q->whereHas('priceTiers', function ($sub) use ($from, $to) {
+                // С 25.09.2026 у новых объявлений цена только в taxi_tariffs;
+                // без этой ветки фильтр по цене выкидывал их все.
+                $q->whereHas('taxiTariff', function ($sub) use ($from, $to) {
+                    $sub->when($from !== null, fn ($s) => $s->where('price_per_day', '>=', $from))
+                        ->when($to !== null, fn ($s) => $s->where('price_per_day', '<=', $to));
+                })->orWhereHas('priceTiers', function ($sub) use ($from, $to) {
                     $sub->when($from !== null, fn ($s) => $s->where('price_per_day', '>=', $from))
                         ->when($to !== null, fn ($s) => $s->where('price_per_day', '<=', $to));
                 })->orWhereHas('tariffs', function ($sub) use ($from, $to) {
