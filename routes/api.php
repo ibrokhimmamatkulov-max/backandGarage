@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\Moderation\ListingModerationController;
 use App\Http\Controllers\Api\Moderation\DocumentReviewController;
 use App\Http\Controllers\Api\Moderation\OwnerManagementController;
+use App\Http\Controllers\Api\Client\AuthController as ClientAuthController;
+use App\Http\Controllers\Api\Client\FavoriteController as ClientFavoriteController;
 use App\Http\Controllers\Api\Owner\ApplicationController as OwnerApplicationController;
 use App\Http\Controllers\Api\Owner\AuthController as OwnerAuthController;
 use App\Http\Controllers\Api\Owner\AvailabilityController as OwnerAvailabilityController;
@@ -182,6 +184,28 @@ Route::prefix('landing')->group(function () {
 | Отдельный контур от админского 'api' (Passport): токен владельца не должен
 | открывать админские ручки.
 */
+/*
+|--------------------------------------------------------------------------
+| Клиент (арендатор) — guard 'client' (Sanctum)
+|--------------------------------------------------------------------------
+| Вход по номеру и коду из SMS; тот же токен выдаёт подача заявки.
+| Токен клиента не открывает ни кабинет владельца, ни админку.
+*/
+Route::prefix('client')->group(function () {
+    Route::prefix('auth')->group(function () {
+        Route::post('request-otp', [ClientAuthController::class, 'requestOtp'])->middleware('throttle:20,1');
+        Route::post('verify-otp',  [ClientAuthController::class, 'verifyOtp'])->middleware('throttle:20,1');
+        Route::post('logout',      [ClientAuthController::class, 'logout'])->middleware('auth:client');
+    });
+
+    Route::middleware('auth:client')->group(function () {
+        Route::get('me', [ClientAuthController::class, 'me']);
+        Route::get('favorites',           [ClientFavoriteController::class, 'index']);
+        Route::put('favorites/{id}',      [ClientFavoriteController::class, 'store'])->whereNumber('id');
+        Route::delete('favorites/{id}',   [ClientFavoriteController::class, 'destroy'])->whereNumber('id');
+    });
+});
+
 Route::prefix('owner')->group(function () {
 
     Route::prefix('auth')->group(function () {

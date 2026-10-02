@@ -20,6 +20,13 @@ class OwnerOtpCode extends Model
      */
     public const PURPOSE_APPLICATION = 'application';
 
+    /**
+     * Вход клиента (арендатора) по номеру. Хранится в этой же таблице, но под
+     * своим назначением: код для кабинета владельца или для заявки сюда
+     * не подходит, и наоборот.
+     */
+    public const PURPOSE_CLIENT_AUTH = 'client_auth';
+
     public const MAX_ATTEMPTS = 5;
 
     protected $table = 'owner_otp_codes';

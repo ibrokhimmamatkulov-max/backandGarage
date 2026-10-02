@@ -31,6 +31,7 @@ class RentalApplication extends Model
         'source',
         'status_changed_by',
         'status_changed_at',
+        'client_id',
     ];
 
     protected $casts = [

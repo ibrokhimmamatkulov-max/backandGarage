@@ -51,6 +51,13 @@ return [
             'driver' => 'sanctum',
             'provider' => 'owners',
         ],
+
+        // Клиенты (арендаторы) — вход по номеру и коду из SMS. Тоже Sanctum,
+        // но свой провайдер: токен клиента не открывает кабинет владельца.
+        'client' => [
+            'driver' => 'sanctum',
+            'provider' => 'clients',
+        ],
     ],
 
     /*
@@ -79,6 +86,11 @@ return [
         'owners' => [
             'driver' => 'eloquent',
             'model' => App\Models\Owner::class,
+        ],
+
+        'clients' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Client::class,
         ],
 
         // 'users' => [

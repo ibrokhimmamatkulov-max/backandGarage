@@ -19,9 +19,10 @@ class LandingApplicationRequest extends FormRequest
         return [
             'name'      => 'nullable|string|max:255',
             'phone'     => ['required', 'string', 'regex:/^(\+?992|0)?[0-9]{9}$/'],
-            // Код подтверждения телефона: отсекает выдуманные номера,
-            // аккаунт при этом не создаётся — арендатор остаётся анонимным
-            'code'      => ['required', 'string', 'max:10'],
+            // Код подтверждения телефона: отсекает выдуманные номера.
+            // Вошедшему клиенту (токен на тот же номер) код не нужен —
+            // это проверяет контроллер.
+            'code'      => ['nullable', 'string', 'max:10'],
             'city_id'   => ['required', 'integer', Rule::exists('cities', 'id')],
             'offer_id'  => ['required', 'integer', Rule::exists('performer_transports', 'id')],
             'tariff_id' => ['nullable', 'integer', Rule::exists('rental_tariffs', 'id')],

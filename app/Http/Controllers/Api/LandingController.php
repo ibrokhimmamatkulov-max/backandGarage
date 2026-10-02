@@ -10,6 +10,7 @@ use App\Models\ApplicationStatus;
 use App\Models\BodyType;
 use App\Models\CarBrand;
 use App\Models\CarOption;
+use App\Models\Client;
 use App\Models\City;
 use App\Models\ColorCar;
 use App\Models\Gearbox;
@@ -21,6 +22,7 @@ use App\Models\RentalApplication;
 use App\Models\RentalTariff;
 use App\Services\CarFilterService;
 use App\Services\Listing\AvailabilityService;
+use App\Services\Client\ClientAccountService;
 use App\Services\Listing\PriceCalculator;
 use App\Services\Owner\OtpService;
 use App\Services\Owner\PhoneNormalizer;
@@ -34,6 +36,7 @@ class LandingController extends Controller
         private readonly AvailabilityService $availability,
         private readonly PriceCalculator $calculator,
         private readonly OtpService $otp,
+        private readonly ClientAccountService $clients,
     ) {
     }
 
@@ -290,15 +293,22 @@ class LandingController extends Controller
     {
         $data = $request->validated();
 
-        // Телефон должен быть подтверждён кодом
-        $verified = $this->otp->verify(
-            $data['phone'],
-            (string) $request->input('code', ''),
-            OwnerOtpCode::PURPOSE_APPLICATION
-        );
+        // Номер уже подтверждён, если клиент вошёл по токену на этот же номер
+        $session = $request->user('client');
+        $sessionOk = $session instanceof Client
+            && $session->phone === PhoneNormalizer::normalize($data['phone']);
 
-        if (!$verified['ok']) {
-            return $this->error($verified['error'], 422, ['code' => [$verified['error']]]);
+        if (!$sessionOk) {
+            // Иначе телефон должен быть подтверждён кодом
+            $verified = $this->otp->verify(
+                $data['phone'],
+                (string) $request->input('code', ''),
+                OwnerOtpCode::PURPOSE_APPLICATION
+            );
+
+            if (!$verified['ok']) {
+                return $this->error($verified['error'], 422, ['code' => [$verified['error']]]);
+            }
         }
 
         $offer = PerformerTransport::query()
@@ -328,12 +338,16 @@ class LandingController extends Controller
             $data['desired_end_date'] ?? null
         );
 
+        // Код подтвердил номер — это и есть вход: аккаунт заводится сам.
+        $client = $this->clients->findOrCreateByPhone($data['phone'], $data['name'] ?? null);
+
         $statusId = ApplicationStatus::where('code', 'new')->value('id')
             ?? ApplicationStatus::first()?->id
             ?? 1;
 
         $application = RentalApplication::create([
             'performer_transport_id' => $offer->id,
+            'client_id'              => $client->id,
             'owner_id'               => $offer->owner_id,
             'rental_tariff_id'       => $data['tariff_id'] ?? null,
             'price_tier_id'          => $calc['tier_id'],
@@ -353,7 +367,13 @@ class LandingController extends Controller
         $this->notifyOwner($offer, $application);
 
         return $this->success(
-            ['application_id' => $application->id],
+            [
+                'application_id' => $application->id,
+                // Сессия клиента: после заявки он сразу вошёл — избранное
+                // и повторные заявки без нового кода.
+                'token'          => $this->clients->issueToken($client),
+                'client'         => $this->clients->present($client),
+            ],
             'Заявка принята. Мы свяжемся с вами в ближайшее время.',
             201
         );
